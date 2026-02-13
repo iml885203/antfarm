@@ -1,0 +1,164 @@
+# Research workflow — turns a vague concept into a concrete, actionable spec
+id: research
+name: Research & Spec
+version: 1
+description: |
+  Turns a rough idea or concept into a concrete specification.
+  Researcher explores the problem space, existing solutions, and technical landscape.
+  Architect synthesizes findings into a technical spec with clear scope.
+  Reviewer validates the spec for feasibility and completeness.
+  Output: a spec document ready to feed into feature-dev workflow.
+
+agents:
+  - id: researcher
+    name: Researcher
+    role: analysis
+    model: "openai-codex/gpt-5.3-codex"
+    description: Explores the problem space, surveys existing solutions, gathers technical context.
+    workspace:
+      baseDir: agents/researcher
+      files:
+        AGENTS.md: agents/researcher/AGENTS.md
+        SOUL.md: agents/researcher/SOUL.md
+        IDENTITY.md: agents/researcher/IDENTITY.md
+
+  - id: architect
+    name: Architect
+    role: analysis
+    model: "openai-codex/gpt-5.3-codex"
+    description: Synthesizes research into a concrete technical specification.
+    workspace:
+      baseDir: agents/architect
+      files:
+        AGENTS.md: agents/architect/AGENTS.md
+        SOUL.md: agents/architect/SOUL.md
+        IDENTITY.md: agents/architect/IDENTITY.md
+
+  - id: reviewer
+    name: Reviewer
+    role: analysis
+    model: "openai-codex/gpt-5.3-codex"
+    description: Reviews spec for feasibility, completeness, and clarity.
+    workspace:
+      baseDir: agents/reviewer
+      files:
+        AGENTS.md: ../../agents/shared/verifier/AGENTS.md
+        SOUL.md: ../../agents/shared/verifier/SOUL.md
+        IDENTITY.md: ../../agents/shared/verifier/IDENTITY.md
+
+steps:
+  - id: research
+    agent: researcher
+    input: |
+      Research the following concept and explore the problem space.
+
+      CONCEPT:
+      {{task}}
+
+      Instructions:
+      1. Understand the core problem or need being described
+      2. Search the web for existing solutions, tools, and approaches
+      3. Evaluate 3-5 existing options (if any) with pros/cons
+      4. Identify the target user and key use cases
+      5. Note technical constraints, dependencies, and risks
+      6. If a repo is mentioned, explore its codebase for relevant context
+      7. Gather any API docs, data sources, or integrations needed
+
+      Reply with:
+      STATUS: done
+      PROBLEM_STATEMENT: Clear description of the problem
+      EXISTING_SOLUTIONS: |
+        - Solution 1: pros/cons
+        - Solution 2: pros/cons
+        ...
+      USE_CASES: |
+        - Use case 1
+        - Use case 2
+        ...
+      TECHNICAL_NOTES: |
+        Key technical findings, constraints, APIs, data sources
+      RECOMMENDATION: Build / use existing / hybrid, and why
+    expects: "STATUS: done"
+    max_retries: 2
+    on_fail:
+      escalate_to: human
+
+  - id: spec
+    agent: architect
+    input: |
+      Create a technical specification based on the research findings.
+
+      CONCEPT:
+      {{task}}
+
+      RESEARCH FINDINGS:
+      Problem: {{problem_statement}}
+      Existing Solutions: {{existing_solutions}}
+      Use Cases: {{use_cases}}
+      Technical Notes: {{technical_notes}}
+      Recommendation: {{recommendation}}
+
+      Instructions:
+      1. Define the MVP scope — smallest useful version
+      2. Choose tech stack with justification
+      3. Design the high-level architecture (components, data flow)
+      4. Define the data model / schema
+      5. List API endpoints or key interfaces
+      6. Specify what "done" looks like (acceptance criteria for MVP)
+      7. Identify risks and open questions
+      8. Estimate effort (T-shirt sizing: S/M/L/XL)
+      9. Write the spec as a standalone markdown document
+
+      Write the spec to: spec.md (in the output directory)
+
+      Reply with:
+      STATUS: done
+      SPEC_FILE: path to spec.md
+      MVP_SCOPE: Brief summary of MVP
+      TECH_STACK: Chosen stack
+      EFFORT: Estimated effort
+      RISKS: Key risks
+    expects: "STATUS: done"
+    max_retries: 2
+    on_fail:
+      escalate_to: human
+
+  - id: review
+    agent: reviewer
+    input: |
+      Review the technical specification for feasibility and completeness.
+
+      CONCEPT:
+      {{task}}
+
+      SPEC FILE: {{spec_file}}
+      MVP SCOPE: {{mvp_scope}}
+      TECH STACK: {{tech_stack}}
+      EFFORT: {{effort}}
+      RISKS: {{risks}}
+
+      Review for:
+      1. Is the MVP scope realistic and well-bounded?
+      2. Does the tech stack make sense for the use case?
+      3. Are there missing components or overlooked edge cases?
+      4. Are acceptance criteria clear and testable?
+      5. Are risks properly identified?
+      6. Could this spec be handed to feature-dev workflow as-is?
+
+      If the spec is ready:
+      Reply with:
+      STATUS: done
+      VERDICT: approved
+      NOTES: Any final notes or suggestions
+
+      If changes needed:
+      STATUS: retry
+      VERDICT: needs_revision
+      FEEDBACK:
+      - What needs to change
+    expects: "STATUS: done"
+    on_fail:
+      retry_step: spec
+      max_retries: 2
+      on_exhausted:
+        escalate_to: human

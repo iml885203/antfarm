@@ -13,6 +13,7 @@ agents:
   - id: planner
     name: Planner
     role: analysis
+    model: "openai-codex/gpt-5.3-codex"
     description: Decomposes tasks into ordered user stories.
     workspace:
       baseDir: agents/planner
@@ -24,6 +25,7 @@ agents:
   - id: setup
     name: Setup
     role: coding
+    model: "openai-codex/gpt-5.3-codex"
     description: Prepares environment, creates branch, establishes baseline.
     workspace:
       baseDir: agents/setup
@@ -35,6 +37,7 @@ agents:
   - id: developer
     name: Developer
     role: coding
+    model: "openai-codex/gpt-5.3-codex"
     description: Implements features, writes tests, creates PRs.
     workspace:
       baseDir: agents/developer
@@ -46,6 +49,7 @@ agents:
   - id: verifier
     name: Verifier
     role: verification
+    model: "openai-codex/gpt-5.3-codex"
     description: Quick sanity check - did developer actually do the work?
     workspace:
       baseDir: agents/verifier
@@ -57,6 +61,7 @@ agents:
   - id: tester
     name: Tester
     role: testing
+    model: "openai-codex/gpt-5.3-codex"
     description: Integration and E2E testing after all stories are implemented.
     workspace:
       baseDir: agents/tester
@@ -68,6 +73,7 @@ agents:
   - id: reviewer
     name: Reviewer
     role: analysis
+    model: "openai-codex/gpt-5.3-codex"
     description: Reviews PRs, requests changes or approves.
     workspace:
       baseDir: agents/reviewer
@@ -94,6 +100,7 @@ steps:
       6. Always include "Typecheck passes" as the last criterion in every story
       7. Every story MUST include test criteria — "Tests for [feature] pass"
       8. The developer is expected to write tests as part of each story
+      9. Always include a final story for developer experience: one-command startup, one-command test/CI, all dependencies declared, and a README or runbook with setup instructions
 
       Reply with:
       STATUS: done
@@ -215,6 +222,7 @@ steps:
       4. Tests pass (run {{test_cmd}})
       5. No obvious incomplete work
       6. Typecheck passes
+      7. If the project includes a runnable server or CLI entry point, verify it starts without immediate errors
 
       Reply with:
       STATUS: done
